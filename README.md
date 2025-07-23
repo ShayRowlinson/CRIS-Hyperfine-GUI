@@ -1,5 +1,5 @@
 # CRIS-Hyperfine-GUI
-Package for quick binning of CRIS data and analysis of hyperfine structure, centroid shifts between scans and extraction of nuclear moments.
+Package for quick binning of CRIS data and analysis of hyperfine structure, centroid shifts between scans and extraction of nuclear magnetic dipole and electric quadrupole moments.
 
 Ensure SATLAS2 is installed!
 
