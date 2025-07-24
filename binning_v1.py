@@ -289,7 +289,7 @@ class Binning(ttk.Frame):
         ax_left = self.fig.add_subplot(gs[1:, 0], sharey=ax_main)
         cax = self.fig.add_subplot(gs[1:, 4])
     
-        # Hide x tick labels on ax_top and y tick labels on ax_left
+        # Hide x tick labels on top and y tick labels on left
         plt.setp(ax_top.get_xticklabels(), visible=False)
         plt.setp(ax_left.get_yticklabels(), visible=False)
     
@@ -348,7 +348,7 @@ class Binning(ttk.Frame):
         ax_left.tick_params(axis='y', labelleft=False, which='both')
         ax_left.tick_params(axis='x', labelsize=9)
     
-        # Remove overlapping ticks for clarity
+        # Remove overlapping ticks
         ax_top.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
         ax_left.tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
         ax_main.tick_params(axis='both', labelsize=10)
