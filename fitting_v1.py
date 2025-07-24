@@ -358,7 +358,7 @@ class Fitting(ttk.Frame):
 
     def _show_estimate(self):
         """
-        Toggles estimate ON/OFF. If ON, update and allow live slider updates. If OFF, hide and stop updating.
+        Toggles estimate on or off. If on, update and allow live slider updates. If off, hide and stop updating.
         """
         if not self.estimate_visible:
             # Turn ON
@@ -436,7 +436,7 @@ class Fitting(ttk.Frame):
     def _import_parameters(self):
         """
         Extracts A_l, A_u, B_l, B_u, and I from element CSV using given element symbol and mass number,
-        and fills in the fit parameter fields.
+        and fills in/overwrites those fields.
         """
         element = self.element_var.get().strip()
         mass_number = self.massnumber_var.get().strip()
