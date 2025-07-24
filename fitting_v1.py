@@ -569,7 +569,7 @@ class Fitting(ttk.Frame):
         
         top = tk.Toplevel(self)
         top.title("Expanded Plot")
-        fig = Figure(figsize=(10, 6))  
+        fig = Figure(figsize=(8, 4.25))  
     
         # If fit present, show main and residuals, else just main
         if self.fit_curve is not None and self.fit_x is not None:
@@ -618,7 +618,7 @@ class Fitting(ttk.Frame):
     
         canvas = FigureCanvasTkAgg(fig, master=top)
         canvas.draw()
-        canvas.get_tk_widget().pack(fill='both', expand=True)
+        canvas.get_tk_widget().pack(fill='both', expand=False)
         toolbar = NavigationToolbar2Tk(canvas, top)
         toolbar.update()
         toolbar.pack(side="top", fill="x")
