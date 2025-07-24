@@ -201,10 +201,8 @@ class Binning(ttk.Frame):
 
     def run_binning(self):
         """
-        - Loads scan folder and parameters from user input
-        - Extracts exact mass from Elements CSV using element symbol and mass number
-        - Runs Dopplershift_data binning 
-        - Plots results for single scan
+        Loads scan folder and parameters from user input, extracts exact mass from Elements CSV using element symbol and mass number, 
+        runs Dopplershift_data binning, plots results.
         """
         try:
             scan_folder = self.folder_var.get()
