@@ -65,7 +65,7 @@ class CentroidPlot(ttk.Frame):
     def _load_and_plot(self):
         """
         Loads centroid data from the correct CSV based on user input and plots centroid vs scan number.
-        Calculates and plots the weighted mean and ±1σ lines.
+        Calculates and plots the mean and ±1σ lines.
         """
         # Find correct CSV based on element and mass
         element = self.element_var.get().strip()
@@ -112,25 +112,25 @@ class CentroidPlot(ttk.Frame):
             # Plot red circles for data
             self.ax.plot(scan_x, centroid_y, 'o', color='red', markersize=3, label='Centroid frequency')
     
-            # Weighted mean and std
+            # mean and std
             if centroid_err is not None and not np.all(np.isnan(centroid_err)):
                 valid = ~np.isnan(centroid_y) & ~np.isnan(centroid_err) & (centroid_err > 0)
                 if np.any(valid):
                     weights = 1 / centroid_err[valid]**2
-                    weighted_mean = np.average(centroid_y[valid], weights=weights)
-                    weighted_var = np.average((centroid_y[valid] - weighted_mean) ** 2, weights=weights)
-                    weighted_std = np.sqrt(weighted_var)
+                    mean = np.average(centroid_y[valid], weights=weights)
+                    var = np.average((centroid_y[valid] - mean) ** 2, weights=weights)
+                    std = np.sqrt(var)
                 else:
-                    weighted_mean = np.mean(centroid_y)
-                    weighted_std = np.std(centroid_y, ddof=1)
+                    mean = np.mean(centroid_y)
+                    std = np.std(centroid_y, ddof=1)
             else:
-                weighted_mean = np.mean(centroid_y)
-                weighted_std = np.std(centroid_y, ddof=1)
+                mean = np.mean(centroid_y)
+                std = np.std(centroid_y, ddof=1)
     
-            # Plot weighted mean and ±1σ lines
-            self.ax.axhline(weighted_mean, color='green', linestyle='-', label=f"Mean: {weighted_mean:.3g} / MHz")
-            self.ax.axhline(weighted_mean + 0.5 * weighted_std, color='green', linestyle=':', label="Width between lines = σ")
-            self.ax.axhline(weighted_mean - 0.5 * weighted_std, color='green', linestyle=':')
+            # Plot mean and ±1σ lines
+            self.ax.axhline(mean, color='green', linestyle='-', label=f"Mean: {mean:.3g} / MHz")
+            self.ax.axhline(mean + 0.5 * std, color='green', linestyle=':', label="Width between lines = σ")
+            self.ax.axhline(mean - 0.5 * std, color='green', linestyle=':')
     
             self.ax.set_xlabel("Scan number")
             self.ax.set_ylabel("Centroid frequency / MHz")
