@@ -105,9 +105,9 @@ class CentroidPlot(ttk.Frame):
             # --- Plot ---
             self.ax.clear()
     
-            # Plot error bars (if available) separately to color them blue
+            # Plot error bars
             if centroid_err is not None and not np.all(np.isnan(centroid_err)):
-                self.ax.errorbar(scan_x, centroid_y, yerr=centroid_err, fmt='none', ecolor='blue', capsize=4)
+                self.ax.errorbar(scan_x, centroid_y, yerr=centroid_err, fmt='none', ecolor='k', capsize=4)
     
             # Plot red circles for data
             self.ax.plot(scan_x, centroid_y, 'o', color='red', markersize=3, label='Centroid frequency')
