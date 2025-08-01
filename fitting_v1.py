@@ -266,7 +266,7 @@ class Fitting(ttk.Frame):
         if fit_curve is not None and fit_x is not None:
             self.ax.plot(fit_x, fit_curve, color='blue', label='SATLAS2 Fit')
     
-        self.ax.set_ylabel('Countrate per bunch')
+        self.ax.set_ylabel('Counts per bunch')
         self.ax.legend()
         self.ax.set_title(os.path.basename(self.filepath) if self.filepath else "Scan")
         self.ax.set_xlabel("Frequency offset / MHz")
@@ -594,7 +594,7 @@ class Fitting(ttk.Frame):
         if self.fit_curve is not None and self.fit_x is not None:
             ax_main.plot(self.fit_x, self.fit_curve, color='blue', label='SATLAS2 Fit')
     
-        ax_main.set_ylabel('Countrate per bunch')
+        ax_main.set_ylabel('Counts per bunch')
         ax_main.legend()
         ax_main.set_title(os.path.basename(self.filepath) if self.filepath else "Scan")
         ax_main.grid(True)
