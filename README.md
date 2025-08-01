@@ -25,7 +25,8 @@ Functionality is possible with only Mass and ExactMass columns. Everything else 
 For binning and fitting:
 
 Binning requires you to go select the scan folder where things like wavemeter_ds.csv and tagger_ds.csv are saved for that scan
-scan folder contains:
+
+Scan folder contains:
 cec_voltage_ds, diodes_ds, iscool2_ds, powermeter_1_ds, powermeter_3_ds, tagger_ds, wavemeter_ds, wavemeter_pdl_ds
 These file names are given in Dopplershift_analysis if you wish to change the file names the program looks for.
 
