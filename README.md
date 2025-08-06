@@ -1,6 +1,8 @@
 # CRIS-Hyperfine-GUI
 Package for quick binning of CRIS data and analysis of hyperfine structure, centroid shifts between scans and extraction of nuclear magnetic dipole and electric quadrupole moments.
 
+Version 2 now with scan combination and isomeric fitting.
+
 GUI is configured to be ideal for a 1080p monitor. If you're using a higher resolution, increasing the figure size in fitting_v1.py will make the fitting frame more clear.
 
 -----------------------------------------------------------------------------------------------------------------------------------
