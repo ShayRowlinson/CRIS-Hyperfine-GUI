@@ -238,7 +238,6 @@ class Dopplershift_data:
             plt.ylabel('Counts', fontsize = 14)
             plt.legend(fontsize = 14)
             plt.title(str(self._mass)+"Sb: Scan "+str(self._scan))
-            #plt.show()
             data.loc[((data['delta_t'] < manual[0]) | (data['delta_t'] > manual[1])), 'delta_t'] = -0.005
             data.loc[((data['delta_t'] < manual[0]) | (data['delta_t'] > manual[1])), 'channel'] = -1
             return data.loc[(data['delta_t'] < 0) | ( (data['delta_t'] > manual[0]) & (data['delta_t'] < manual[1]))]
@@ -257,7 +256,6 @@ class Dopplershift_data:
         plt.legend(fontsize = 14)
         plt.title(str(self._mass)+"Sb: Scan "+str(self._scan))
         plt.savefig(f'{self._SAVEPATH_FIG}{self._scan}_tof.png', dpi = 400, bbox_inches='tight')
-        #plt.show()
         data.loc[((data['delta_t'] < TOF_spectrum[0][indexleftbound]) | (data['delta_t'] > TOF_spectrum[0][indexrightbound])), 'delta_t'] = -0.005
         data.loc[((data['delta_t'] < TOF_spectrum[0][indexleftbound]) | (data['delta_t'] > TOF_spectrum[0][indexrightbound])), 'channel'] = -1
         return data.loc[(data['delta_t'] < 0) | ( (data['delta_t'] > TOF_spectrum[0][indexleftbound]) & (data['delta_t'] < TOF_spectrum[0][indexrightbound]))]

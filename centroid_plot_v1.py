@@ -105,13 +105,6 @@ class CentroidPlot(ttk.Frame):
             # --- Plot ---
             self.ax.clear()
     
-            # Plot error bars
-            if centroid_err is not None and not np.all(np.isnan(centroid_err)):
-                self.ax.errorbar(scan_x, centroid_y, yerr=centroid_err, fmt='none', ecolor='k', capsize=4)
-    
-            # Plot red circles for data
-            self.ax.plot(scan_x, centroid_y, 'o', color='red', markersize=3, label='Centroid frequency')
-    
             # mean and std
             if centroid_err is not None and not np.all(np.isnan(centroid_err)):
                 valid = ~np.isnan(centroid_y) & ~np.isnan(centroid_err) & (centroid_err > 0)
@@ -128,9 +121,16 @@ class CentroidPlot(ttk.Frame):
                 std = np.std(centroid_y, ddof=1)
     
             # Plot mean and ±1σ lines
-            self.ax.axhline(mean, color='green', linestyle='-', label=f"Mean: {mean:.3g} / MHz")
-            self.ax.axhline(mean + 0.5 * std, color='green', linestyle=':', label="Width between lines = σ")
+            self.ax.axhline(mean, color='green', linestyle='-', label=f"Mean: {mean:.3g} MHz")
+            self.ax.axhline(mean + 0.5 * std, color='green', linestyle=':', label="Width between lines = 1σ")
             self.ax.axhline(mean - 0.5 * std, color='green', linestyle=':')
+            
+            # Plot error bars
+            if centroid_err is not None and not np.all(np.isnan(centroid_err)):
+                self.ax.errorbar(scan_x, centroid_y, yerr=centroid_err, fmt='none', ecolor='k', capsize=2)
+    
+            # Plot red circles for data
+            self.ax.plot(scan_x, centroid_y, 'o', color='red', markersize=2)
     
             self.ax.set_xlabel("Scan number")
             self.ax.set_ylabel("Centroid frequency / MHz")
