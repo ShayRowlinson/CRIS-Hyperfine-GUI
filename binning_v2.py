@@ -33,6 +33,9 @@ class Binning(ttk.Frame):
     User can add scans to a queue, then bin all as one dataset.
     """
     def __init__(self, parent):
+        """
+        Initialises the binning frame and widgets.
+        """
         super().__init__(parent)
         self.grid_columnconfigure(0, weight=1)
         self.binned_data = None
@@ -40,6 +43,9 @@ class Binning(ttk.Frame):
         self._build_gui()
 
     def _build_gui(self):
+        """
+        Builds the layout for the Binning tab.
+        """
         header = ttk.Label(
             self, text="CRIS scan binning for hyperfine analysis",
             font=("Segoe UI", 18, "bold")
@@ -53,6 +59,9 @@ class Binning(ttk.Frame):
         self._build_bottom_controls()
 
     def _build_param_frame(self):
+        """
+        Creates and places all input widgets for user parameters in a labeled frame.
+        """
         param_frame = ttk.LabelFrame(self, text="Parameters", padding=(16,10))
         param_frame.grid(row=1, column=0, sticky="ew", padx=6, pady=4)
         for i in range(8): param_frame.columnconfigure(i, weight=1)
@@ -104,6 +113,9 @@ class Binning(ttk.Frame):
         spectra_mode_check.grid(row=3, column=7, sticky='e', padx=(6, 4), pady=(2, 0))
 
     def _build_plot_frame(self):
+        """
+        Creates canvas for both figure set ups.
+        """
         plot_frame = ttk.LabelFrame(self, text="Results", padding=(6,4))
         plot_frame.grid(row=3, column=0, sticky="nsew", padx=6, pady=2)
         plot_frame.columnconfigure(0, weight=1)
@@ -116,6 +128,9 @@ class Binning(ttk.Frame):
         self.toolbar.pack(side="bottom", fill="x")
 
     def _build_bottom_controls(self):
+        """
+        Controls for multiscan/exports
+        """
         bottom_frame = ttk.Frame(self)
         bottom_frame.grid(row=4, column=0, sticky="ew", padx=8, pady=6)
         bottom_frame.columnconfigure(1, weight=1)
@@ -149,11 +164,17 @@ class Binning(ttk.Frame):
         self.export_button.grid(row=0, column=4, padx=(0,0))
 
     def browse_scan_folder(self):
+        """
+        Select scan location
+        """
         path = filedialog.askdirectory(title="Select scan folder")
         if path:
             self.folder_var.set(path)
 
     def get_exact_mass(self, element, mass_number):
+        """
+        Find the exact mass from elements CSV for dopplershifting.
+        """
         elements_folder = os.path.join(os.path.dirname(__file__), "Elements")
         csv_path = os.path.join(elements_folder, f"{element.capitalize()}.csv")
         if not os.path.exists(csv_path):
@@ -223,19 +244,31 @@ class Binning(ttk.Frame):
             mb.showwarning("No Data", "No binned data to export.")
 
     def set_status(self, msg):
+        """
+        Update the GUI’s status message
+        """
         self.status_var.set(msg)
         self.update_idletasks()
 
     def set_running_state(self, running=True):
+        """
+        Enable or disable the export button depending on whether a process is running.
+        """
         state = 'disabled' if running else 'normal'
         self.export_button.config(state=state if running else ('normal' if self.binned_data is not None else 'disabled'))
 
     def run_binning_thread(self):
+        """
+        Start binning in a background thread so the GUI doesn’t freeze.
+        """
         self.set_running_state(True)
         self.set_status("Running binning on all queued scans...")
         threading.Thread(target=self.run_binning, daemon=True).start()
 
     def run_binning(self):
+        """
+        Run binning.
+        """
         if not self.scan_queue:
             self.set_status("No scans in queue to bin.")
             self.set_running_state(False)
@@ -281,6 +314,9 @@ class Binning(ttk.Frame):
             self.set_running_state(False)
             
     def bin_current_scan(self):
+        """
+        Bin only the currently selected scan, not any in the queue.
+        """
         try:
             scan_folder = self.folder_var.get()
             if not scan_folder:
@@ -325,6 +361,9 @@ class Binning(ttk.Frame):
             messagebox.showerror("Error", f"Could not bin current scan:\n{e}")
 
     def plot_results(self, data, D):
+        """
+        Plot spectra OR full 3D layout
+        """
         import matplotlib.pyplot as plt
         import numpy as np
     
@@ -358,7 +397,7 @@ class Binning(ttk.Frame):
             self.canvas.draw()
             return
     
-        # --- Defalt: full layout---
+        # --- Defalt: full 3 plot layout---
         gs = GridSpec(
             4, 5,
             figure=self.fig,
@@ -434,5 +473,8 @@ class Binning(ttk.Frame):
 
         
     def _redraw_plot_mode(self):
+        """
+        Redraw plot if mode changed.
+        """
         if hasattr(self, "last_data") and hasattr(self, "last_D"):
             self.plot_results(self.last_data, self.last_D)
