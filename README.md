@@ -17,15 +17,18 @@ Full functionality of GUI requires the following:
 Set up a CSV file in
 
 {program location}/Elements/'[Element symbol].csv'
+
 e.g C:/Program/Elements/Sb.csv
 
 with headings: 
+
 Mass, ExactMass, A_l, A_u, B_l, B_u, I, centroid,
+
 Example Sb.csv left as a guide
 
 
 
-Functionality is possible with only Mass and ExactMass columns. Everything else can be inputted into GUI manually.
+Full functionality is possible with only Mass and ExactMass columns. Everything else can be inputted into GUI manually.
 
 -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -33,18 +36,18 @@ For binning and fitting:
 
 Binning requires you to go select the scan folder where things like wavemeter_ds.csv and tagger_ds.csv are saved for that scan
 
-Scan folder contains:
+Compatible Scan folder set up contains:
 
 cec_voltage_ds, diodes_ds, iscool2_ds, powermeter_1_ds, powermeter_3_ds, tagger_ds, wavemeter_ds, wavemeter_pdl_ds
 
 These file names are given in Dopplershift_analysis if you wish to change the file names the program looks for.
 
 
-Binning process formats data ready for fitting. Format for fitting looks like:
+The binning process formats data ready for fitting. Format for fitting looks like:
 
 x, xerr, y, yerr, bunches
 
-column names are sensitive but column order doesn't matter
+COLUMN NAMES ARE SENSITIVE but column order doesn't matter
 
 
 Fiting is to y/bunches vs x
@@ -56,6 +59,8 @@ If your data is already normalised to counts per bunch: simply set bunches to 1 
 
 If the fit or show estimate buttons don't do anything: Check your I and Js before looking into data or code.
 
+If error pops up that uncertainties couldn't be estimated: your starting parameters are likely too far away from the final fit
+
 -----------------------------------------------------------------------------------------------------------------------------------
 
 For moment extraction:
@@ -66,7 +71,11 @@ Program calls upon the I values from the Elements csv so ensure this column is f
 
 
 Set up a CSV file in
+
 {program location}/References/'[Element symbol]_[Mass Number].csv'
+
+e.g C:/Program/References/Sb_123.csv
+
 with headings:
 
 A_l, A_u, B_l, B_u, mu, Q, I,
@@ -76,3 +85,5 @@ Please use mu as the header: pandas doesn't like μ
 Example Sb_123.csv left as guide
 
 -----------------------------------------------------------------------------------------------------------------------------------
+
+For any questions: contact me at shayrowlinson@gmail.com or shay.rowlinson@student.manchester.ac.uk
