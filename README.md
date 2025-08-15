@@ -2,8 +2,9 @@
 Package for quick binning of CRIS data and analysis of hyperfine structure, centroid shifts between scans and extraction of nuclear magnetic dipole and electric quadrupole moments.
 
 Version 2 now with scan combination and isomeric fitting.
+Version 3 with elementary machine learning parameter estimation
 
-GUI is configured to be ideal for a 1080p monitor. If you're using a higher resolution, increasing the figure size in fitting_v1.py will make the fitting frame more clear.
+GUI is configured to be ideal for a 1080p monitor. If you're using a higher resolution, increasing the figure sizes likely a good idea
 
 -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -16,12 +17,12 @@ Full functionality of GUI requires the following:
 Set up a CSV file in
 
 {program location}/Elements/'[Element symbol].csv'
+e.g C:/Program/Elements/Sb.csv
 
 with headings: 
-
 Mass, ExactMass, A_l, A_u, B_l, B_u, I, centroid,
-
 Example Sb.csv left as a guide
+
 
 
 Functionality is possible with only Mass and ExactMass columns. Everything else can be inputted into GUI manually.
