@@ -20,7 +20,7 @@ Set up a CSV file in
 
 {program location}/Elements/'[Element symbol].csv'
 
-e.g C:/Program/Elements/Sb.csv
+e.g C:/CRIS-Hyperfine-GUI-3.0/Elements/Sb.csv
 
 with headings: 
 
@@ -76,7 +76,7 @@ Set up a CSV file in
 
 {program location}/References/'[Element symbol]_[Mass Number].csv'
 
-e.g C:/Program/References/Sb_123.csv
+e.g C:/CRIS-Hyperfine-GUI-3.0/References/Sb_123.csv
 
 with headings:
 
