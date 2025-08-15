@@ -6,6 +6,8 @@ Version 3 with elementary machine learning parameter estimation
 
 GUI is configured to be ideal for a 1080p monitor. If you're using a higher resolution, increasing the figure sizes likely a good idea
 
+Please extract the zip file into the folder where the python files are stored.
+
 -----------------------------------------------------------------------------------------------------------------------------------
 
 Ensure SATLAS2 is installed!
