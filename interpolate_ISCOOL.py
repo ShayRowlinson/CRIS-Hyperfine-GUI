@@ -67,7 +67,7 @@ def filter_ISCOOL(path: str, mass_range: list, filename: str, ISCOOL_voltage_mul
 		filtered_ISCOOL_spline = interp1d(timestamp, filtered_iscool, bounds_error=False, fill_value='extrapolate')
 		return filtered_ISCOOL_spline
 	else:
-		raise RuntimeError('Not yet implemented, implement the filter u want yourself, u lazy fk')
+		raise RuntimeError('Not yet implemented')
 
 def interpolateISCOOL(path: str, mass_range: list, filename: str, ISCOOL_voltage_multiplier: float, plot: bool = False, iscool_columns: list = ['timestamp', 'offset', 'iscool_voltage']) -> interp1d:
 	'''Creates a linear spline for ISCOOL interpolation. Adds one value at the beginning and end to not raise the input x is outside of interpolation range
