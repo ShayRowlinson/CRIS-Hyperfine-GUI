@@ -23,7 +23,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import satlas2
+import satlas2 as satlas2
 from matplotlib.figure import Figure
 import joblib
 
@@ -72,11 +72,17 @@ class Fitting(ttk.Frame):
         self.A_u_vars = {1: DoubleVar(value=0), 2: DoubleVar(value=0)}
         self.B_l_vars = {1: DoubleVar(value=0), 2: DoubleVar(value=0)}
         self.B_u_vars = {1: DoubleVar(value=0), 2: DoubleVar(value=0)}
+        
+        # Fixing variables
         self.A_l_fix = {1: BooleanVar(), 2: BooleanVar()}
         self.A_u_fix = {1: BooleanVar(), 2: BooleanVar()}
         self.B_l_fix = {1: BooleanVar(), 2: BooleanVar()}
         self.B_u_fix = {1: BooleanVar(), 2: BooleanVar()}
+        
+        # Ratio variables - detached from individual fixes
+        self.Au_Al_fix = {1: BooleanVar(), 2: BooleanVar()}
         self.Bu_Bl_fix = {1: BooleanVar(), 2: BooleanVar()}
+        
         self.df_vars = {1: DoubleVar(value=0), 2: DoubleVar(value=0)}
         self.scale_vars = {1: DoubleVar(value=10), 2: DoubleVar(value=10)}
         self.FWHMg_vars = {1: DoubleVar(value=100), 2: DoubleVar(value=100)}
@@ -170,25 +176,26 @@ class Fitting(ttk.Frame):
     def _render_param_widgets(self):
         """
         Clears and re-renders the parameter controls for the currently selected fit.
-        Called on startup and every time the selected fit changes.
         """
-        # Remove old widgets
         for child in self.fitparam_frame.winfo_children():
             info = child.grid_info()
             if info.get("row") not in (12, 13):
                 child.destroy()
         fit = self.selected_fit  # 1 or 2
+        
         self._add_param_slider(self.fitparam_frame, 0, "A_l", self.A_l_vars[fit], self.A_l_fix[fit])
         self._add_param_slider(self.fitparam_frame, 1, "A_u", self.A_u_vars[fit], self.A_u_fix[fit])
-        ttk.Checkbutton(self.fitparam_frame, text="A_u/A_l Fix", variable=self.A_u_fix[fit]).grid(row=1, column=4)
+        # Fix unlinked checkbox
+        ttk.Checkbutton(self.fitparam_frame, text="A_u/A_l Fix", variable=self.Au_Al_fix[fit]).grid(row=1, column=4)
+        
         self._add_param_slider(self.fitparam_frame, 2, "B_l", self.B_l_vars[fit], self.B_l_fix[fit])
         self._add_param_slider(self.fitparam_frame, 3, "B_u", self.B_u_vars[fit], self.B_u_fix[fit])
         ttk.Checkbutton(self.fitparam_frame, text="B_u/B_l Fix", variable=self.Bu_Bl_fix[fit]).grid(row=3, column=4)
+        
         self._add_param_slider(self.fitparam_frame, 4, "df (MHz)", self.df_vars[fit])
         self._add_param_slider(self.fitparam_frame, 5, "scale", self.scale_vars[fit], from_=0, to=20)
         self._add_param_slider(self.fitparam_frame, 6, "FWHM_g", self.FWHMg_vars[fit], from_=0, to=5000)
         self._add_param_slider(self.fitparam_frame, 7, "FWHM_l", self.FWHMl_vars[fit], from_=0, to=5000)
-        #self._add_param_slider(self.fitparam_frame, 8, "Intensity", self.intensity_vars[fit], from_=0, to=5)
         self._add_param_slider(self.fitparam_frame, 9, "Background", self.background_vars[fit], from_=0, to=0.00001)
         ttk.Checkbutton(self.fitparam_frame, text="Racah int.", variable=self.racah_int[fit]).grid(row=10, column=3)
 
@@ -209,10 +216,12 @@ class Fitting(ttk.Frame):
         for fit in (1,2):
             self.A_l_vars[fit].trace_add("write", lambda *args, fit=fit: self._on_A_var_changed("A_l", fit))
             self.A_u_vars[fit].trace_add("write", lambda *args, fit=fit: self._on_A_var_changed("A_u", fit))
-            self.A_u_fix[fit].trace_add("write", lambda *args, fit=fit: self._on_A_ratio_fix_toggled(fit))
+            self.Au_Al_fix[fit].trace_add("write", lambda *args, fit=fit: self._on_A_ratio_fix_toggled(fit))
+            
             self.B_l_vars[fit].trace_add("write", lambda *args, fit=fit: self._on_B_var_changed("B_l", fit))
             self.B_u_vars[fit].trace_add("write", lambda *args, fit=fit: self._on_B_var_changed("B_u", fit))
             self.Bu_Bl_fix[fit].trace_add("write", lambda *args, fit=fit: self._on_B_ratio_fix_toggled(fit))
+            
             for var in [
                 self.df_vars[fit], self.scale_vars[fit], self.FWHMg_vars[fit], self.FWHMl_vars[fit],
                 self.intensity_vars[fit], self.background_vars[fit]
@@ -220,68 +229,59 @@ class Fitting(ttk.Frame):
                 var.trace_add("write", lambda *args, fit=fit: self._slider_update_estimate(fit))
 
     def _on_fit_toggle(self, fit_num):
-        """Called when Fit 1 or Fit 2 is selected for parameter editing."""
         self.selected_fit = fit_num
         self.I_entry.config(textvariable=self.I_vars[fit_num])
         self._render_param_widgets()
         self._update_fit_results_box()
 
     def _on_active_toggle(self, fit_num):
-        """Toggle the 'active' state for a fit (enables/disables for fitting)."""
         self.fits[fit_num]["active"] = not self.fits[fit_num]["active"]
 
     def _on_show_estimate(self, fit_num):
-        """Show/hide estimate for given fit; overlays estimates from both fits."""
         self.fits[fit_num]["estimate_visible"] = not self.fits[fit_num]["estimate_visible"]
         self._update_estimate(fit_num)
 
     def _update_estimate(self, fit_num):
-        """Updates and displays SATLAS2 estimate for current parameter values of fit_num, overlays on main plot."""
         if self.data is None or not self.fits[fit_num]["estimate_visible"]:
             self.fits[fit_num]["estimate_curve"] = None
             self._plot_data()
             return
-        x = self.data['x'].to_numpy()
-        y = (self.data['y'] / self.data['bunches']).to_numpy()
-        yerr = (self.data['yerr'] / self.data['bunches']).to_numpy()
+        x_data = self.data['x'].to_numpy()
+        y_data = (self.data['y'] / self.data['bunches']).to_numpy()
+        yerr_data = (self.data['yerr'] / self.data['bunches']).to_numpy()
         params = self._collect_fit_params(fit_num)
-        hfs = satlas2.HFS(
+        
+        source = satlas2.Source(x_data, y_data, yerr_data, name=f'Estimate_Source_{fit_num}')
+        hfs = satlas2.interface.HFSModel(
             I=params["I"],
             J=[params["J_l"], params["J_u"]],
-            A=[params["A_l"], params["A_u"]],
-            B=[params["B_l"], params["B_u"]],
-            C=[0,0],
-            df=params["df"],
+            ABC=[params["A_l"], params["A_u"], params["B_l"], params["B_u"], 0, 0],
+            centroid=params["df"],
             scale=params["scale"],
-            racah=params["racah"],
-            fwhmg=params["FWHMg"],
-            fwhml=params["FWHMl"],
-            name='hfs',
+            fwhm=[params["FWHMg"], params["FWHMl"]],
+            background_params=[params["background"]],
+            use_racah=params["racah"]
         )
-        background = params["background"]
-        bkg = satlas2.Polynomial([background], name='bkg')
-        source = satlas2.Source(x=x, y=y, yerr=yerr, name="source")
         source.addModel(hfs)
-        source.addModel(bkg)
-        fit_x = np.linspace(x.min(), x.max(), 500)
+        bkg_model = satlas2.Polynomial([params["background"]], name=f'bkg_est_{fit_num}')
+        source.addModel(bkg_model)
+        
+        fit_x = np.linspace(x_data.min(), x_data.max(), 500)
         estimate_curve = source.evaluate(fit_x)
         self.fits[fit_num]["estimate_curve"] = estimate_curve
         self.fits[fit_num]["fit_x"] = fit_x
         self._plot_data()
 
     def _slider_update_estimate(self, fit_num):
-        """Only update estimate if estimate is visible for given fit."""
         if self.fits[fit_num]["estimate_visible"]:
             self._update_estimate(fit_num)
 
     def _import_scan(self):
-        """Opens a dialogue to import a binned scan CSV and plots the data."""
         path = filedialog.askopenfilename(title="Select binned scan CSV", filetypes=[("CSV", "*.csv")])
         if not path:
             return
         self.filepath = path
     
-        # Tried to make it so it works for both ; and , delimited files. Binning tab uses ; so this is 'default'
         df = None
         for sep in [";", ","]:
             try:
@@ -308,7 +308,6 @@ class Fitting(ttk.Frame):
                 self._update_estimate(fit_num)
 
     def _plot_data(self):
-        """Plots the imported scan data and overlays the fits/estimates for both fits."""
         self.fig.clf()
         self.ax = self.fig.subplots()
         if self.data is None:
@@ -319,7 +318,7 @@ class Fitting(ttk.Frame):
         y = (self.data['y'] / self.data['bunches']).to_numpy()
         yerr = (self.data['yerr'] / self.data['bunches']).to_numpy()
         self.ax.errorbar(x, y, yerr=yerr, fmt='o', color='red', markersize=2, ecolor='k', capsize=2, label='Data')
-        # Overlay estimate/fit for both fits if present
+        
         colors = {1: 'green', 2: 'purple'}
         fit_labels = {1: 'Fit 1', 2: 'Fit 2'}
         estimate_labels = {1: 'Estimate 1', 2: 'Estimate 2'}
@@ -339,7 +338,6 @@ class Fitting(ttk.Frame):
     def _fit_peaks(self):
         """
         Runs SATLAS2 fitting for all fits currently set as active.
-        Overlays both fits on the same plot if both are active.
         """
         if self.data is None:
             messagebox.showerror("No scan loaded", "Please import a scan CSV first.")
@@ -352,54 +350,104 @@ class Fitting(ttk.Frame):
         if not fits_to_run:
             messagebox.showinfo("No fit active", "Please activate at least one fit.")
             return
+        
         x = self.data['x'].to_numpy()
         y = (self.data['y'] / self.data['bunches']).to_numpy()
         yerr = (self.data['yerr'] / self.data['bunches']).to_numpy()
+
+        datasource = satlas2.Source(x, y, yerr, name='Fit')
+        active_models = {}
+
         for fit_num in fits_to_run:
             params = self._collect_fit_params(fit_num)
-            hfs = satlas2.HFS(
+            hfs = satlas2.interface.HFSModel(
                 I=params["I"],
                 J=[params["J_l"], params["J_u"]],
-                A=[params["A_l"], params["A_u"]],
-                B=[params["B_l"], params["B_u"]],
-                C=[0,0],
-                df=params["df"],
+                ABC=[params["A_l"], params["A_u"], params["B_l"], params["B_u"], 0, 0],
+                centroid=params["df"],
                 scale=params["scale"],
-                racah=params["racah"],
-                fwhmg=params["FWHMg"],
-                fwhml=params["FWHMl"],
-                name='hfs',
+                fwhm=[params["FWHMg"], params["FWHMl"]],
+                background_params=[params["background"]],
+                use_racah=params["racah"]
             )
-            hfs.params['scale'].vary = True
-            hfs.params['Al'].vary = not self.A_l_fix[fit_num].get()
-            hfs.params['Au'].vary = not self.A_u_fix[fit_num].get()
-            hfs.params['Bl'].vary = not self.B_l_fix[fit_num].get()
-            hfs.params['Bu'].vary = not self.B_u_fix[fit_num].get()
-            hfs.params['Cl'].vary = False
-            hfs.params['Cu'].vary = False
-            background = params["background"]
-            bkg = satlas2.Polynomial([background], name='bkg')
-            source = satlas2.Source(x=x, y=y, yerr=yerr, name="source")
-            source.addModel(hfs)
-            source.addModel(bkg)
-            f = satlas2.Fitter()
-            f.addSource(source)
+            
+            # Match standard variation behavior
+            
+            # Explicitly force native python boolean mapping for all relevant parameters
+            vary_dict = {
+                'scale': True,
+                'centroid': True,
+                'Al': not bool(self.A_l_fix[fit_num].get()),
+                'Au': not bool(self.A_u_fix[fit_num].get()),
+                'Bl': not bool(self.B_l_fix[fit_num].get()),
+                'Bu': not bool(self.B_u_fix[fit_num].get()),
+                'Cl': False,
+                'Cu': False
+            }
+            hfs.set_variation(vary_dict)
+
+            # Fail-safe: ensure underlying parameter objects respect our vary flags
+            for p_name, vary_bool in vary_dict.items():
+                if p_name in hfs.params:
+                    hfs.params[p_name].vary = vary_bool
+
+            # Use ratio linkage if selected - implement as expression and explicitly mark linked param as fixed
+            if self.Au_Al_fix[fit_num].get() and self.A_ratio[fit_num] is not None:
+                # Safeguard: if Al is zero and fixed, ensure Au is not varied
+                if params["A_l"] == 0 and not vary_dict['Al']:
+                    if 'Au' in hfs.params:
+                        hfs.params['Au'].vary = False
+                else:
+                    ratio = self.A_ratio[fit_num]
+                    hfs.set_expr({'Au': [f'{ratio}', 'Al']})
+                    if 'Au' in hfs.params:
+                        hfs.params['Au'].vary = False
+            # Otherwise Au stays with the requested variation state (already applied above)
+
+            # B ratio linkage
+            if self.Bu_Bl_fix[fit_num].get() and self.B_ratio[fit_num] is not None:
+                if params["B_l"] == 0 and not vary_dict['Bl']:
+                    if 'Bu' in hfs.params:
+                        hfs.params['Bu'].vary = False
+                else:
+                    ratio = self.B_ratio[fit_num]
+                    hfs.set_expr({'Bu': [f'{ratio}', 'Bl']})
+                    if 'Bu' in hfs.params:
+                        hfs.params['Bu'].vary = False
+            datasource.addModel(hfs)
+            active_models[fit_num] = hfs
+
+        repr_bkg = self.background_vars[fits_to_run[0]].get()
+        bkg_model = satlas2.Polynomial([repr_bkg], name='bkg')
+        datasource.addModel(bkg_model)
+
+        f = satlas2.Fitter()
+        f.addSource(datasource)
+        
+        try:
             f.fit()
             report = f.reportFit()
-            self.fits[fit_num]["last_fit_hfs"] = hfs  # Store fitted HFS object for later use
             if "uncertainties could not be estimated" in report:
-                messagebox.showwarning(
-                    "Uncertainties Not Estimated",
-                    f"Warning: uncertainties could not be estimated for fit {fit_num}.\nCheck parameter values and try again."
-                )
+                for fit_num in fits_to_run:
+                    messagebox.showwarning(
+                        "Uncertainties Not Estimated",
+                        f"Warning: uncertainties could not be estimated for fit {fit_num}.\nCheck parameter values and try again."
+                    )
             print(report)
-            fit_x = np.linspace(x.min(), x.max(), 500)
-            fit_y = source.evaluate(fit_x)
-            self.fits[fit_num]["fit_x"] = fit_x
-            self.fits[fit_num]["fit_curve"] = fit_y
+        except Exception as e:
+            messagebox.showerror("Fitting Error", f"An error occurred during fitting:\n{e}")
+            return
+
+        fit_x = np.linspace(x.min(), x.max(), 500)
+        total_fitted_curve = datasource.evaluate(fit_x)
+
         for fit_num in fits_to_run:
+            self.fits[fit_num]["last_fit_hfs"] = active_models[fit_num] 
+            self.fits[fit_num]["fit_curve"] = total_fitted_curve 
+            self.fits[fit_num]["fit_x"] = fit_x
             self.fits[fit_num]["estimate_visible"] = False
             self.fits[fit_num]["estimate_curve"] = None
+
         self._plot_data()
         self._update_fit_results_box()
         messagebox.showinfo("Fit finished", "Fit(s) finished! Select 'Expand Plot' for residuals.")
@@ -424,8 +472,7 @@ class Fitting(ttk.Frame):
         }
 
     def _import_parameters(self):
-        """Import parameters from Elements CSV; missing values become 0.
-        Show a popup with which values were found and which were missing."""
+        """Import parameters from Elements CSV."""
         element = self.element_var.get().strip()
         mass_number = self.massnumber_var.get().strip()
         if not element or not mass_number:
@@ -448,7 +495,7 @@ class Fitting(ttk.Frame):
             fit = self.selected_fit
             found_params = []
             missing_params = []
-    
+
             def get_value(col):
                 if col not in match:
                     missing_params.append(col)
@@ -465,7 +512,7 @@ class Fitting(ttk.Frame):
             self.A_u_vars[fit].set(get_value('A_u'))
             self.B_l_vars[fit].set(get_value('B_l'))
             self.B_u_vars[fit].set(get_value('B_u'))
-    
+            
             if 'I' in match:
                 I_val = match['I'].values[0]
                 if pd.isna(I_val):
@@ -474,7 +521,7 @@ class Fitting(ttk.Frame):
                 else:
                     found_params.append('I')
                     self.I_vars[fit].set(float(I_val))
-    
+            
             if 'centroid' in match:
                 centroid_val = match['centroid'].values[0]
                 if pd.isna(centroid_val):
@@ -483,8 +530,7 @@ class Fitting(ttk.Frame):
                 else:
                     found_params.append('centroid')
                     self.df_vars[fit].set(float(centroid_val))
-    
-            # Build message
+
             msg = f"Parameters imported for {element}-{mass_number} (fit {fit}):\n"
             if found_params:
                 msg += "\nFound: " + ", ".join(found_params)
@@ -496,8 +542,7 @@ class Fitting(ttk.Frame):
             messagebox.showerror("Error", f"Failed to import parameters: {e}")
 
     def _save_fit_parameters(self):
-        """Saves fit parameters and uncertainties for the currently selected fit as a new row in
-        (current directory)/<Element>_Results/<mass>/Saved_Parameters.csv"""
+        """Saves fit parameters and uncertainties for the currently selected fit."""
         import csv
         fit = self.selected_fit
         if not self.fits[fit]["last_fit_hfs"]:
@@ -517,59 +562,58 @@ class Fitting(ttk.Frame):
         except ValueError:
             messagebox.showerror("Invalid input", "Scan number must be an integer.")
             return
+        
         root_dir = os.path.dirname(os.path.abspath(__file__))
         save_dir = os.path.join(root_dir, f"{element.capitalize()}_Results", str(mass))
         os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, "Saved_Parameters.csv")
+        
         fit_params = self.fits[fit]["last_fit_hfs"].params
-        centroid_param = fit_params["centroid"] if "centroid" in fit_params else fit_params["df"]
+        centroid_param = fit_params["centroid"]
+        
+        def safe_unc(param):
+            return getattr(param, "unc", "")
+
         param_dict = {
             "scan": scan_number,
             "I": self.I_vars[fit].get(),
             "A_l": fit_params["Al"].value,
-            "A_l_err": fit_params["Al"].unc if getattr(fit_params["Al"], 'unc', None) is not None else "",
+            "A_l_err": safe_unc(fit_params["Al"]),
             "A_u": fit_params["Au"].value,
-            "A_u_err": fit_params["Au"].unc if getattr(fit_params["Au"], 'unc', None) is not None else "",
+            "A_u_err": safe_unc(fit_params["Au"]),
             "B_l": fit_params["Bl"].value,
-            "B_l_err": fit_params["Bl"].unc if getattr(fit_params["Bl"], 'unc', None) is not None else "",
+            "B_l_err": safe_unc(fit_params["Bl"]),
             "B_u": fit_params["Bu"].value,
-            "B_u_err": fit_params["Bu"].unc if getattr(fit_params["Bu"], 'unc', None) is not None else "",
+            "B_u_err": safe_unc(fit_params["Bu"]),
             "centroid": centroid_param.value,
-            "centroid_err": centroid_param.unc if getattr(centroid_param, 'unc', None) is not None else "",
+            "centroid_err": safe_unc(centroid_param),
         }
         columns = [
-            "scan",
-            "I",
-            "A_l", "A_l_err",
-            "A_u", "A_u_err",
-            "B_l", "B_l_err",
-            "B_u", "B_u_err",
-            "centroid", "centroid_err"
+            "scan", "I", "A_l", "A_l_err", "A_u", "A_u_err",
+            "B_l", "B_l_err", "B_u", "B_u_err", "centroid", "centroid_err"
         ]
         new_row = [param_dict[c] for c in columns]
         file_exists = os.path.exists(save_path)
         if file_exists:
             df = pd.read_csv(save_path, dtype=str)
-            if set(columns).issubset(df.columns):
-                existing = df[df['scan'] == str(scan_number)]
-                if not existing.empty:
-                    if not messagebox.askyesno("Overwrite?", f"Scan {scan_number} already saved. Overwrite?"):
-                        messagebox.showinfo("Aborted", "Save cancelled. Existing scan not overwritten.")
-                        return
-                    df = df[df['scan'] != str(scan_number)]
-                df = pd.concat([df, pd.DataFrame([dict(zip(columns, new_row))])], ignore_index=True)
-                df.to_csv(save_path, index=False)
-                messagebox.showinfo("Success", f"Fit parameters (with uncertainties) saved in:\n{save_path}")
-                return
-        with open(save_path, 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            if not file_exists:
+            existing = df[df['scan'] == str(scan_number)]
+            if not existing.empty:
+                if not messagebox.askyesno("Overwrite?", f"Scan {scan_number} already saved. Overwrite?"):
+                    messagebox.showinfo("Aborted", "Save cancelled. Existing scan not overwritten.")
+                    return
+            df = df[df['scan'] != str(scan_number)]
+            df = pd.concat([df, pd.DataFrame([dict(zip(columns, new_row))])], ignore_index=True)
+            df.to_csv(save_path, index=False)
+            messagebox.showinfo("Success", f"Fit parameters (with uncertainties) saved in:\n{save_path}")
+        else:
+            with open(save_path, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
                 writer.writerow(columns)
-            writer.writerow(new_row)
-        messagebox.showinfo("Success", f"Fit parameters (with uncertainties) saved to:\n{save_path}")
+                writer.writerow(new_row)
+            messagebox.showinfo("Success", f"Fit parameters (with uncertainties) saved to:\n{save_path}")
 
     def _expand_plot(self):
-        """Opens a new top-level window with a larger version of the current plot, including all fits/estimates."""
+        """Opens a new top-level window with a larger version of the current plot."""
         if self.data is None:
             messagebox.showerror("No scan loaded", "Import a scan first.")
             return
@@ -577,50 +621,33 @@ class Fitting(ttk.Frame):
         top.title("Expanded Plot")
         fig = Figure(figsize=(8,4.25))
         any_fit = any(self.fits[fit_num]["fit_curve"] is not None for fit_num in (1,2))
-        if any_fit:
-            axs = fig.subplots(2, 1, sharex=True, gridspec_kw={"height_ratios": [3, 1]})
-            ax_main, ax_resid = axs
-        else:
-            ax_main = fig.subplots()
-            ax_resid = None
+        axs = fig.subplots(2, 1, sharex=True, gridspec_kw={"height_ratios": [3, 1]}) if any_fit else [fig.subplots()]
+        ax_main = axs[0]
         x = self.data['x'].to_numpy()
         y = (self.data['y'] / self.data['bunches']).to_numpy()
         yerr = (self.data['yerr'] / self.data['bunches']).to_numpy()
         ax_main.errorbar(x, y, yerr=yerr, fmt='o', color='red', markersize=2, ecolor='k', capsize=2, label='Data')
         colors = {1: 'green', 2: 'purple'}
-        fit_labels = {1: 'Fit 1', 2: 'Fit 2'}
-        estimate_labels = {1: 'Estimate 1', 2: 'Estimate 2'}
         for fit_num in (1,2):
-            if self.fits[fit_num]["estimate_visible"] and self.fits[fit_num]["estimate_curve"] is not None and self.fits[fit_num]["fit_x"] is not None:
-                ax_main.plot(self.fits[fit_num]["fit_x"], self.fits[fit_num]["estimate_curve"], color=colors[fit_num], linestyle='--', label=estimate_labels[fit_num])
-            if self.fits[fit_num]["fit_curve"] is not None and self.fits[fit_num]["fit_x"] is not None:
-                ax_main.plot(self.fits[fit_num]["fit_x"], self.fits[fit_num]["fit_curve"], color=colors[fit_num], label=fit_labels[fit_num])
-        ax_main.set_ylabel('Counts per bunch')
+            if self.fits[fit_num]["fit_curve"] is not None:
+                ax_main.plot(self.fits[fit_num]["fit_x"], self.fits[fit_num]["fit_curve"], color=colors[fit_num], label=f'Fit {fit_num}')
         ax_main.legend()
-        ax_main.set_title(os.path.basename(self.filepath) if self.filepath else "Scan")
         ax_main.grid(True)
-        if ax_resid is not None and self.fits[self.selected_fit]["fit_curve"] is not None:
+        if len(axs) > 1 and self.fits[self.selected_fit]["fit_curve"] is not None:
             from scipy.interpolate import interp1d
             fit_interp = interp1d(self.fits[self.selected_fit]["fit_x"], self.fits[self.selected_fit]["fit_curve"], kind='linear', fill_value="extrapolate")
             residuals = y - fit_interp(x)
-            ax_resid.axhline(0, color='grey', lw=1, linestyle='--')
-            ax_resid.errorbar(x, residuals, yerr=yerr, fmt='o', markersize=1, color='red', ecolor='black', capsize=2)
-            ax_resid.set_ylabel("Residuals")
-            ax_resid.set_xlabel("Frequency offset / MHz")
-            ax_resid.grid(True)
-        else:
-            ax_main.set_xlabel("Frequency offset / MHz")
+            axs[1].errorbar(x, residuals, yerr=yerr, fmt='o', markersize=1, color='red', ecolor='black', capsize=2)
+            axs[1].axhline(0, color='grey', lw=1, linestyle='--')
+            axs[1].grid(True)
         fig.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=top)
         canvas.draw()
         canvas.get_tk_widget().pack(fill='both', expand=False)
-        toolbar = NavigationToolbar2Tk(canvas, top)
-        toolbar.update()
-        toolbar.pack(side="top", fill="x")
+        NavigationToolbar2Tk(canvas, top).update()
 
     def _on_A_ratio_fix_toggled(self, fit_num):
-        """Stores ratio for A_u/A_l for fit_num when ratio fixing is enabled/disabled."""
-        if self.A_u_fix[fit_num].get():
+        if self.Au_Al_fix[fit_num].get():
             Al = self.A_l_vars[fit_num].get()
             Au = self.A_u_vars[fit_num].get()
             self.A_ratio[fit_num] = Au / Al if Al != 0 else None
@@ -628,7 +655,6 @@ class Fitting(ttk.Frame):
             self.A_ratio[fit_num] = None
 
     def _on_B_ratio_fix_toggled(self, fit_num):
-        """Stores ratio for B_u/B_l for fit_num when ratio fixing is enabled/disabled."""
         if self.Bu_Bl_fix[fit_num].get():
             Bl = self.B_l_vars[fit_num].get()
             Bu = self.B_u_vars[fit_num].get()
@@ -637,73 +663,39 @@ class Fitting(ttk.Frame):
             self.B_ratio[fit_num] = None
 
     def _on_A_var_changed(self, changed, fit_num):
-        """fix for A_l/A_u for fit_num when enabled."""
-        if self.A_u_fix[fit_num].get() and self.A_ratio[fit_num] is not None and not self._updating_A:
+        if self.Au_Al_fix[fit_num].get() and self.A_ratio[fit_num] is not None and not self._updating_A:
             try:
                 self._updating_A = True
-                Al = self.A_l_vars[fit_num].get()
-                Au = self.A_u_vars[fit_num].get()
-                if changed == "A_l":
-                    self.A_u_vars[fit_num].set(Al * self.A_ratio[fit_num])
-                elif changed == "A_u":
-                    if self.A_ratio[fit_num] != 0:
-                        self.A_l_vars[fit_num].set(Au / self.A_ratio[fit_num])
-            finally:
-                self._updating_A = False
+                if changed == "A_l": self.A_u_vars[fit_num].set(self.A_l_vars[fit_num].get() * self.A_ratio[fit_num])
+                elif changed == "A_u" and self.A_ratio[fit_num] != 0: self.A_l_vars[fit_num].set(self.A_u_vars[fit_num].get() / self.A_ratio[fit_num])
+            finally: self._updating_A = False
         self._slider_update_estimate(fit_num)
 
     def _on_B_var_changed(self, changed, fit_num):
-        """fix for B_l/B_u for fit_num when enabled."""
         if self.Bu_Bl_fix[fit_num].get() and self.B_ratio[fit_num] is not None and not self._updating_B:
             try:
                 self._updating_B = True
-                Bl = self.B_l_vars[fit_num].get()
-                Bu = self.B_u_vars[fit_num].get()
-                if changed == "B_l":
-                    self.B_u_vars[fit_num].set(Bl * self.B_ratio[fit_num])
-                elif changed == "B_u":
-                    if self.B_ratio[fit_num] != 0:
-                        self.B_l_vars[fit_num].set(Bu / self.B_ratio[fit_num])
-            finally:
-                self._updating_B = False
+                if changed == "B_l": self.B_u_vars[fit_num].set(self.B_l_vars[fit_num].get() * self.B_ratio[fit_num])
+                elif changed == "B_u" and self.B_ratio[fit_num] != 0: self.B_l_vars[fit_num].set(self.B_u_vars[fit_num].get() / self.B_ratio[fit_num])
+            finally: self._updating_B = False
         self._slider_update_estimate(fit_num)
         
     def _clear_selected_fit(self):
-        """Clears the plotted fit for the currently selected fit, keeping any estimate visible."""
-        fit_num = self.selected_fit
-    
-        # Remove the fit curve but keep estimate 
-        self.fits[fit_num]["fit_curve"] = None
-        self.fits[fit_num]["fit_x"] = None
-        self.fits[fit_num]["last_fit_hfs"] = None  # optional: also clear stored fit object
-    
-        # Replot 
+        self.fits[self.selected_fit]["fit_curve"] = None
         self._plot_data()
 
     def _update_fit_results_box(self):
-        """Updates the fit results box with the latest results for the currently selected fit."""
         fit = self.selected_fit
-        try:
-            hfs = self.fits[fit]["last_fit_hfs"]
-            if hfs is None:
-                self.fit_results_box.config(state='normal')
-                self.fit_results_box.delete(1.0, tk.END)
-                self.fit_results_box.insert(tk.END, "No fit result for selected fit yet.")
-                self.fit_results_box.config(state='disabled')
-                return
-            fit_params = hfs.params
-            self.fit_results_box.config(state='normal')
-            self.fit_results_box.delete(1.0, tk.END)
+        hfs = self.fits[fit]["last_fit_hfs"]
+        self.fit_results_box.config(state='normal')
+        self.fit_results_box.delete(1.0, tk.END)
+        if hfs:
             self.fit_results_box.insert(tk.END, "---- Fit Results (fit {}) ----\n".format(fit))
-            for k in fit_params:
-                v = fit_params[k].value
-                self.fit_results_box.insert(tk.END, f"{k:12s}: {v:.5g}\n")
-            self.fit_results_box.config(state='disabled')
-        except Exception as e:
-            self.fit_results_box.config(state='normal')
-            self.fit_results_box.delete(1.0, tk.END)
-            self.fit_results_box.insert(tk.END, f"Could not display results: {e}")
-            self.fit_results_box.config(state='disabled')
+            for k, p in hfs.params.items():
+                self.fit_results_box.insert(tk.END, f"{k:12s}: {p.value:.5g}\n")
+        else:
+            self.fit_results_box.insert(tk.END, "No fit result for selected fit yet.")
+        self.fit_results_box.config(state='disabled')
             
     def _estimate_parameters(self):
         """Use trained ML model to estimate parameters for the loaded scan and set sliders/values."""
