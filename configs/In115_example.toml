@@ -1,0 +1,19 @@
+# Binning settings for In-115 scan 3603, reproducing the binned file made with v3.
+# Load with: BinningSettings.from_toml("configs/In115_example.toml")
+
+[scan]
+mass_number = 115
+exact_mass = 114.903878776           # amu
+transition_wavenumber = 40506.421    # cm^-1, reference for the relative frequency axis
+harmonic = 3
+bin_size_MHz = 10
+tof_gate = [15.5, 19.5]              # microseconds; remove to find the gate automatically
+
+# Everything below is the v3 default, written out so it is easy to change.
+wavenumber_channel = "wavenumber_1"
+voltage_scanning = false
+noise_cut = "advanced"
+noise_threshold = 0.15               # microseconds
+iscool_method = "avg"                # "avg", "spline" or "savgol"
+iscool_multiplier = 10001.645
+cec_calibration = 1.005030

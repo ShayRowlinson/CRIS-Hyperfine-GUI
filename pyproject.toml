@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cris-analysis"
+dynamic = ["version"]
+description = "Binning, fitting and analysis of CRIS hyperfine-structure scans"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Shay Rowlinson" }]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11,<1.18",  # satlas2 0.4 builds optimize.Bounds([], []), which scipy 1.18 rejects
+    "satlas2>=0.4",
+    "uncertainties>=3.1",
+]
+
+[project.optional-dependencies]
+gui = ["matplotlib>=3.8", "joblib>=1.3"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.setuptools]
+packages = ["cris_analysis"]
+
+[tool.setuptools.dynamic]
+version = { attr = "cris_analysis.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["*_v3.py", "Dopplershift_analysis.py", "interpolate_ISCOOL.py"]
