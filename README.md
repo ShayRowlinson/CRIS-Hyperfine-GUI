@@ -8,6 +8,34 @@ GUI is configured to be ideal for a 1080p monitor. If you're using a higher reso
 
 Please extract the zip file into the folder where the python files are stored.
 
+## v4 analysis package (in progress)
+
+The physics is moving out of the GUI into `cris_analysis`, a Python package you can use from scripts and notebooks. The v3 GUI files are unchanged and still work.
+
+```bash
+pip install -e .            # add [dev] for pytest and ruff
+```
+
+```python
+from cris_analysis import BinningSettings, bin_scans
+from cris_analysis.fitting import HFSComponent, fit_spectrum
+
+settings = BinningSettings.from_toml("configs/In115_example.toml")
+scan = bin_scans("path/to/scan_3603", settings)
+scan.save("results/In/115/3603.csv")      # v3-format CSV plus 3603.json with every setting used
+
+result = fit_spectrum(scan.spectrum, [HFSComponent(I=4.5, J_l=1.5, J_u=0.5, A_l=242, A_u=-300, B_l=450, centroid=-500, scale=5)])
+print(result.table(), result.redchi)
+```
+
+v4 reproduces v3 binning bin for bin, and v3 fits to well within their errors, on In-115 scan 3603 (see `tests/`). Changes from v3:
+
+- Every hard-coded setting (transition wavenumber, harmonic, ISCOOL divider, CEC calibration, noise threshold, ...) is in `BinningSettings`, loadable from a TOML file.
+- Fixed: the ISCOOL `spline` and `savgol` methods crashed; the advanced noise cut dropped whole bunches (good events and the bunch count) when one event coincided with noise; device flags leaked between scans; mu could not be computed when a reference B was zero.
+- Fitting: B (and A for J = 0) is fixed automatically when J is too small for it to exist, so uncertainties are no longer lost; no hidden second background; components with the same spin no longer clash.
+- Bins are now exactly the requested width (v3 used 3.34e-5 cm^-1/MHz, 0.13% too wide). Pass `legacy_bin_width=True` to reproduce v3.
+- scipy is pinned below 1.18 until SATLAS2 supports it.
+
 -----------------------------------------------------------------------------------------------------------------------------------
 
 Ensure SATLAS2 is installed!

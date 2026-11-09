@@ -1,0 +1,7 @@
+__pycache__/
+*.egg-info/
+.venv/
+build/
+dist/
+# Raw beamtime data is not committed; see tests/README.md
+tests/data/
